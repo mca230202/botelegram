@@ -6,13 +6,7 @@ from telegram import Bot
 import asyncio
 import re
 import sys
-echo "# botelegram" >> README.md
-git init
-git add README.md
-git commit -m "first commit"
-git branch -M main
-git remote add origin https://github.com/mca230202/botelegram.git
-git push -u origin main
+
 # --- CONFIGURACIÓN ---
 POP3_SERVER = "pop3.kuku.lu"
 EMAIL_ACCOUNTS = [
@@ -64,6 +58,8 @@ async def revisar_correos():
             try:
                 print(f"🔍 Conectando al servidor POP3 para {EMAIL_ACCOUNT}...")
                 mail = poplib.POP3_SSL(POP3_SERVER, PORT, timeout=30)
+
+
 
                 mail.user(EMAIL_ACCOUNT)
                 mail.pass_(PASSWORD)
