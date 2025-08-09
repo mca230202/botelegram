@@ -1,0 +1,126 @@
+
+import poplib
+from email import parser
+import time
+from telegram import Bot
+import asyncio
+import re
+import sys
+echo "# botelegram" >> README.md
+git init
+git add README.md
+git commit -m "first commit"
+git branch -M main
+git remote add origin https://github.com/mca230202/botelegram.git
+git push -u origin main
+# --- CONFIGURACIÓN ---
+POP3_SERVER = "pop3.kuku.lu"
+EMAIL_ACCOUNTS = [
+    ("nethomas018a@honeys.be", "WDRg#M3ZfCJAxG"),
+    ("nethomas15a5@honeys.be", "53NOJWfYxGr8HK&j"),
+    ("cuentaThomas05@usako.net", "XLi)imufOQ6L"),
+    ("cuentaThomas07@usako.net", "a:gYkDObkmXTi1h"),
+    ("cuentaThomas16@usako.net", "R]CH(fSy+ox63)NQ"),
+    ("cuentaThomas28@usako.net", "4JDWab1X)nbydL"),
+    ("cuentaThomas41@usako.net", "UP]oXA1KHcunu"),
+    ("cuentaThomas20@usako.net", "94K[IJU_AICS2qhn"),
+    ("nethomas2a81@honeys.be", "iV$hf6idvX[d"),
+    ("nethomas862u@honeys.be", "JGSe-O9oK7mZPpb"),
+    ("nethomas2184@honeys.be", "7J#joyrMTzLQ{V("),
+    ("nethomas916q@honeys.be", "jJOwvt6in-dqf"),
+    ("nethomas7f56@honeys.be", "AGRG#H4Jm8aFB"),
+    ("nethomas109y@honeys.be", "HY]nvy(*TK2a!RxO"),
+    ("nethomas961f@honeys.be", "dNd{RSZyrAWZ9G"),
+    ("nethomas961w@honeys.be", "]BnJ6oK[P:Xl"),
+    ("nethomas19f6@honeys.be", "yWjcU24ktu_VQS+q"),
+    ("nethomas1a8y@honeys.be", "GWG7fRXPw8ZmB+"),
+    ("nethomas97g6@honeys.be", "EFYZJSlgW+G5c:}P"),
+    ("nethomas962s@honeys.be", "1$BYWH0hW-El7io"),
+    ("nethomas716a@honeys.be", "sF}tOdJnTu#D8sg]"),
+    ("nethomas14a5@honeys.be", "t63FDOPhLoUml5&"),
+    ("nethomas971d@honeys.be", "H&KUOtsLvYa3"),
+    ("nethomas9j71@honeys.be", "OG1RPbvbUc:I"),
+]
+PORT = 995
+
+# --- CONFIGURACIÓN DE TELEGRAM ---
+TELEGRAM_TOKEN = "7819169031:AAGu53tNLoQPaipU1ElwUZQscuxvThn7IKw"
+TELEGRAM_CHAT_IDS = [
+    "5910916435", "1791117148", "6694470105", "1227729423",
+    "1520138248", "2046613972", "5695562269", "1021277549",
+    "5836513962", "5850828120", "6767314967", "1137438609", "7360240142",
+    "5470876128","1451249740","1111737214","7673978510","5850909591",
+    "1581029678","6160541808"
+]
+
+
+# 🔹 Crear el bot de Telegram
+bot = Bot(token=TELEGRAM_TOKEN)
+
+# 🔄 Revisión de correos
+async def revisar_correos():
+    while True:
+        for EMAIL_ACCOUNT, PASSWORD in EMAIL_ACCOUNTS:
+            try:
+                print(f"🔍 Conectando al servidor POP3 para {EMAIL_ACCOUNT}...")
+                mail = poplib.POP3_SSL(POP3_SERVER, PORT, timeout=30)
+
+                mail.user(EMAIL_ACCOUNT)
+                mail.pass_(PASSWORD)
+
+                num_messages = len(mail.list()[1])
+                print(f"📩 Correos encontrados: {num_messages}")
+
+                for i in range(num_messages, 0, -1):
+                    raw_email = b"\n".join(mail.retr(i)[1])
+                    email_message = parser.Parser().parsestr(raw_email.decode(errors='replace'))
+
+                    content = ""
+                    if email_message.is_multipart():
+                        for part in email_message.walk():
+                            if part.get_content_type() in ["text/plain", "text/html"]:
+                                content += part.get_payload(decode=True).decode(errors='replace')
+                    else:
+                        content = email_message.get_payload(decode=True).decode(errors='replace')
+
+                    print(f"\n🔍 Correo de: {email_message['from']}")
+                    print(f"📅 Fecha: {email_message['date']}")
+                    print(f"📩 Asunto: {email_message['subject']}")
+                    print(f"✉️ Contenido: {content[:500]}...")
+
+                    boton_match = re.search(r'enviada desde.*?(https?://[^\s"\'<>]+)', content, re.IGNORECASE)
+                    boton_match2 = re.search(r'<a[^>]+href=["\'](https?://[^\s"\'<>]+)["\'][^>]*>\s*Obtener código\s*</a>', content, re.IGNORECASE)
+
+                    if boton_match:
+                        url_encontrado = boton_match.group(1)
+                        mensaje = f"📬 Nuevo correo detectado en {EMAIL_ACCOUNT}!\n🔗 URL del botón: {url_encontrado}"
+                        for chat_id in TELEGRAM_CHAT_IDS:
+                            await bot.send_message(chat_id=chat_id, text=mensaje)
+                    elif boton_match2:
+                        url_encontrado2 = boton_match2.group(1)
+                        mensaje2 = f"📬 Nuevo correo detectado en {EMAIL_ACCOUNT}!\n🔗 URL del botón: {url_encontrado2}"
+                        for chat_id in TELEGRAM_CHAT_IDS:
+                            await bot.send_message(chat_id=chat_id, text=mensaje2)
+                    else:
+                        print("⚠️ No se encontró el link del botón, no se enviará mensaje.")
+
+                mail.quit()
+
+            except Exception as e:
+                print(f"❌ Error con {EMAIL_ACCOUNT}: {e}")
+                for chat_id in TELEGRAM_CHAT_IDS:
+                    try:
+                        await bot.send_message(chat_id=chat_id, text=f"⚠️ Error en {EMAIL_ACCOUNT}:\n{e}")
+                    except Exception as err:
+                        print(f"⚠️ No se pudo enviar a {chat_id}: {err}")
+
+                        await asyncio.sleep(5)
+
+# 🎯 Ejecutar todo
+async def main():
+    await revisar_correos()
+
+if __name__ == "__main__":
+    if sys.platform.startswith('win'):
+        asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+    asyncio.run(main())
